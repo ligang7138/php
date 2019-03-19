@@ -81,6 +81,10 @@ RUN set -xe; \
 
 	apk del --no-network .fetch-deps
 
+COPY redis-4.3.0.tgz /usr/src/
+COPY swoole-4.3.1.tgz /usr/src/
+COPY docker-php-ext-redis.ini /usr/local/etc/php/conf.d/
+COPY docker-php-ext-swoole.ini /usr/local/etc/php/conf.d/
 COPY php.tar.xz /usr/src/
 COPY docker-php-source /usr/local/bin/
 
@@ -192,12 +196,15 @@ RUN set -xe \
 			| sort -u \
 			| awk 'system("[ -e /usr/local/lib/" $1 " ]") == 0 { next } { print "so:" $1 }' \
 	)" \
+	&& cd /usr/src/ && tar vxf redis-4.3.0.tgz && cd redis-4.3.0 && phpize && ./configure --with-php-config=`which php-config` && make -j4 && make install \
+	&& cd /usr/src/ && tar vxf swoole-4.3.1.tgz && cd swoole-4.3.1 && phpize && ./configure --with-php-config=`which php-config` && make -j4 && make install && cd / \
 	&& apk add --no-cache $runDeps \
 #	\
-#	&& apk del --no-network .build-deps \
+	&& apk del --no-network .build-deps \
 #	\
 # https://github.com/docker-library/php/issues/443
 	&& pecl update-channels \
+	&& rm -rf /usr/src/* \
 	&& rm -rf /tmp/pear ~/.pearrc
 
 COPY docker-php-ext-* docker-php-entrypoint /usr/local/bin/
